@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyGoal - 相棒と叶える目標ノート</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        skybase: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        },
+                        accent: {
+                            pink: '#ff80ab',
+                            purple: '#a78bfa',
+                            yellow: '#fde047',
+                            mint: '#6ee7b7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Zen Maru Gothic"', '"Plus Jakarta Sans"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0e7ff 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.1), 0 8px 10px -6px rgba(14, 165, 233, 0.05);
+        }
+
+        .glass-card-sm {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(224, 242, 254, 0.8);
+        }
+
+        .pop-hover {
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .pop-hover:hover {
+            transform: translateY(-4px) scale(1.01);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+        .animate-float {
+            animation: float 3.5s ease-in-out infinite;
+        }
+
+        @keyframes stampPop {
+            0% { transform: scale(3) rotate(-20deg); opacity: 0; }
+            50% { transform: scale(0.9) rotate(5deg); opacity: 1; }
+            75% { transform: scale(1.1) rotate(-3deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .animate-stamp {
+            animation: stampPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes cellPop {
+            0% { transform: scale(0.4); opacity: 0; }
+            60% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-cell {
+            animation: cellPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Active touch reaction for mobile */
+        .touch-active:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f0f9ff;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #bae6fd;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+    </style>
+</head>
+<body class="font-sans pb-16">
+
+    <header class="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-skybase-200/60 px-4 py-3 shadow-sm">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-skybase-400 to-skybase-300 flex items-center justify-center text-white shadow-md shadow-skybase-300/40">
+                    <i class="fa-solid fa-cloud-moon-rain text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-skybase-700 tracking-tight flex items-center gap-1.5">
+                        SkyGoal <span class="text-xs bg-skybase-100 text-skybase-600 px-2 py-0.5 rounded-full font-bold">v1.1</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium">相棒と一緒に目標クリア！</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="open-profile-btn" class="flex items-center gap-2 bg-skybase-100 hover:bg-skybase-200/70 text-skybase-700 px-3 py-1.5 rounded-full text-xs font-bold transition-all border border-skybase-200">
+                    <i class="fa-solid fa-user-gear text-skybase-500"></i>
+                    <span id="header-user-display">設定</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md md:max-w-2xl mx-auto px-3.5 sm:px-4 pt-4 sm:pt-6 space-y-4 sm:space-y-6">
+
+        <section class="glass-card rounded-3xl p-4 sm:p-6 relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-skybase-200/50 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="absolute right-20 -top-6 w-24 h-24 bg-purple-200/40 rounded-full blur-xl pointer-events-none"></div>
+
+            <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 relative z-10">
+                <div class="relative group cursor-pointer touch-active" id="partner-avatar-wrapper" onclick="openProfileModal()">
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-skybase-100 via-white to-skybase-200 border-2 border-white shadow-lg flex items-center justify-center animate-float overflow-hidden">
+                        <span id="partner-avatar-icon" class="text-4xl sm:text-5xl">🐱</span>
+                    </div>
+                    <div class="absolute -bottom-1 -right-1 bg-white text-skybase-600 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold shadow border border-skybase-100 flex items-center gap-1">
+                        <i class="fa-solid fa-sparkles text-amber-400"></i> 相棒
+                    </div>
+                </div>
+
+                <div class="flex-1 w-full text-center sm:text-left">
+                    <div class="inline-block bg-skybase-50 border border-skybase-200/80 rounded-2xl sm:rounded-tl-none p-3 sm:p-3.5 shadow-sm text-xs sm:text-sm text-slate-700 relative mb-2 w-full sm:w-auto">
+                        <p id="partner-speech" class="font-bold text-skybase-800 leading-relaxed">
+                            「<span id="speech-user-name">ユーザー</span>ちゃん、今日も一緒にがんばろうね！何から始める？」
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px] sm:text-xs mt-1">
+                        <div class="bg-white/90 px-2.5 py-1 rounded-xl border border-skybase-100 shadow-sm flex items-center gap-1">
+                            <span class="text-slate-400 font-bold">相棒:</span>
+                            <span id="partner-name-display" class="font-extrabold text-skybase-600">モコ</span>
+                        </div>
+                        <div class="bg-white/90 px-2.5 py-1 rounded-xl border border-skybase-100 shadow-sm flex items-center gap-1">
+                            <i class="fa-solid fa-fire text-amber-500"></i>
+                            <span class="text-slate-500 font-bold">連続記録:</span>
+                            <span id="total-streak-display" class="font-extrabold text-amber-500">0日継続中</span>
+                        </div>
+                        <div class="bg-white/90 px-2.5 py-1 rounded-xl border border-skybase-100 shadow-sm flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                            <span class="text-slate-500 font-bold">累計完了:</span>
+                            <span id="total-completed-display" class="font-extrabold text-emerald-600">0回</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="flex items-center justify-between pt-1">
+            <div>
+                <h2 class="text-base sm:text-lg font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bullseye text-skybase-500"></i> 今の目標リスト
+                </h2>
+                <p class="text-[11px] sm:text-xs text-slate-500">目標を決めて、毎日ちょこっとずつクリアしよう！</p>
+            </div>
+            <button id="add-goal-btn" class="bg-gradient-to-r from-skybase-400 to-skybase-500 hover:from-skybase-500 hover:to-skybase-600 text-white font-extrabold px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl shadow-md shadow-skybase-300/40 flex items-center gap-1.5 text-xs sm:text-sm transition-all active:scale-95 touch-active">
+                <i class="fa-solid fa-plus"></i> 追加
+            </button>
+        </div>
+
+        <div id="goals-container" class="space-y-4"></div>
+
+        <div id="empty-state" class="hidden glass-card rounded-3xl p-10 text-center space-y-4">
+            <div class="w-20 h-20 bg-skybase-100 rounded-full flex items-center justify-center mx-auto text-3xl text-skybase-400">
+                <i class="fa-solid fa-compass-drafting"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-700 text-base">まだ目標が登録されていません</h3>
+                <p class="text-xs text-slate-500 mt-1">「英語を毎日10単語覚える」「毎日ストレッチする」など、何でもOK！</p>
+            </div>
+            <button onclick="openGoalModal()" class="bg-skybase-500 text-white font-bold px-5 py-2.5 rounded-2xl text-xs shadow-md hover:bg-skybase-600 transition">
+                最初の目標を作る！
+            </button>
+        </div>
+
+    </main>
+
+    <div id="profile-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative animate-stamp">
+            <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-lg font-extrabold text-skybase-700 mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-skybase-400"></i> 設定＆プロフ変更
+            </h3>
+            <p class="text-xs text-slate-500 mb-5">あなたと相棒のプロフィールを調整できるよ。</p>
+
+            <form id="profile-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        <i class="fa-solid fa-user text-skybase-400 mr-1"></i> あなたのお名前（ニックネーム）
+                    </label>
+                    <input type="text" id="user-name-input" maxlength="12" required
+                        class="w-full bg-slate-50 border border-skybase-200 rounded-2xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-skybase-400 transition"
+                        placeholder="例：あおい">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        <i class="fa-solid fa-heart text-skybase-400 mr-1"></i> 相棒（パートナー）の名前
+                    </label>
+                    <input type="text" id="partner-name-input" maxlength="12" required
+                        class="w-full bg-slate-50 border border-skybase-200 rounded-2xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-skybase-400 transition"
+                        placeholder="例：モコ">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-2">
+                        <i class="fa-solid fa-face-smile text-skybase-400 mr-1"></i> 相棒の見た目（アバター）
+                    </label>
+                    <div class="grid grid-cols-5 gap-2" id="avatar-selector"></div>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeProfileModal()" class="w-1/3 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-2xl text-xs hover:bg-slate-200 transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="w-2/3 bg-skybase-500 hover:bg-skybase-600 text-white font-extrabold py-2.5 rounded-2xl text-xs shadow-md transition">
+                        保存する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="goal-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative animate-stamp">
+            <button onclick="closeGoalModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 id="goal-modal-title" class="text-lg font-extrabold text-skybase-700 mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-skybase-400"></i> 新しい目標の追加
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">ワクワクする目標を設定して、今日からスタート！</p>
+
+            <form id="goal-form" class="space-y-4">
+                <input type="hidden" id="goal-id-input">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">目標タイトル</label>
+                    <input type="text" id="goal-title-input" required maxlength="30"
+                        class="w-full bg-slate-50 border border-skybase-200 rounded-2xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-skybase-400 transition"
+                        placeholder="例：英語の単語を毎日10個覚える！">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">カテゴリー</label>
+                        <select id="goal-category-input" class="w-full bg-slate-50 border border-skybase-200 rounded-2xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-skybase-400">
+                            <option value="勉強 📚">勉強 📚</option>
+                            <option value="部活・運動 🏃‍♀️">部活・運動 🏃‍♀️</option>
+                            <option value="自分磨き 💅">自分磨き 💅</option>
+                            <option value="読書・趣味 🎨">読書・趣味 🎨</option>
+                            <option value="生活習慣 ⏰">生活習慣 ⏰</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">目指す日数</label>
+                        <select id="goal-target-days-input" class="w-full bg-slate-50 border border-skybase-200 rounded-2xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-skybase-400">
+                            <option value="7">まずは 7 日間</option>
+                            <option value="14">じっくり 14 日間</option>
+                            <option value="21">習慣化 21 日間</option>
+                            <option value="30">挑戦 30 日間！</option>
+                            <option value="60">本格的な 60 日間</option>
+                            <option value="100">伝説の 100 日間</option>
+                            <option value="365">1年間（365 日間）の大冒険！✨</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">目標達成時の自分へのご褒美（任意）</label>
+                    <input type="text" id="goal-reward-input" maxlength="25"
+                        class="w-full bg-slate-50 border border-skybase-200 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-skybase-400 transition"
+                        placeholder="例：欲しかったコスメを買う！">
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeGoalModal()" class="w-1/3 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-2xl text-xs hover:bg-slate-200 transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="w-2/3 bg-skybase-500 hover:bg-skybase-600 text-white font-extrabold py-2.5 rounded-2xl text-xs shadow-md transition">
+                        目標を保存！
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="praise-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-gradient-to-b from-white via-skybase-50 to-white w-full max-w-sm rounded-3xl p-5 sm:p-6 text-center shadow-2xl relative border-2 border-skybase-300 animate-stamp overflow-hidden">
+            <div class="absolute -top-12 -left-12 w-28 h-28 bg-amber-200/50 rounded-full blur-xl pointer-events-none"></div>
+            <div class="absolute -bottom-12 -right-12 w-28 h-28 bg-skybase-300/50 rounded-full blur-xl pointer-events-none"></div>
+
+            <div id="praise-stamp-display" class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-1 flex items-center justify-center text-5xl sm:text-6xl animate-bounce filter drop-shadow-md">
+                🌸
+            </div>
+
+            <div class="inline-block bg-skybase-100 text-skybase-700 text-[10px] sm:text-xs font-extrabold px-3 py-1 rounded-full mb-1.5">
+                MISSION COMPLETED!!
+            </div>
+
+            <h3 class="text-lg sm:text-xl font-black text-slate-800 mb-1" id="praise-title">
+                すごすぎるよ！！✨
+            </h3>
+
+            <div class="bg-white/90 border border-skybase-200 rounded-2xl p-3.5 sm:p-4 shadow-inner my-3 text-left relative">
+                <div class="flex items-center gap-2 mb-1.5 border-b border-skybase-100 pb-1.5">
+                    <span id="praise-partner-icon" class="text-lg">🐱</span>
+                    <span id="praise-partner-name" class="font-extrabold text-xs text-skybase-600">モコより</span>
+                </div>
+                <p id="praise-message" class="text-xs sm:text-sm font-bold text-slate-700 leading-relaxed">
+                    メッセージがここに入ります。
+                </p>
+            </div>
+
+            <button onclick="closePraiseModal()" class="w-full bg-gradient-to-r from-skybase-400 to-skybase-500 hover:from-skybase-500 hover:to-skybase-600 text-white font-extrabold py-3 rounded-2xl text-xs sm:text-sm shadow-lg shadow-skybase-300/50 transition transform active:scale-95 touch-active flex items-center justify-center gap-1.5">
+                <span id="praise-button-text">この調子で楽しむ！✨</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const AVATARS = ['🐱', '🐶', '🐰', '🐻', '🐥', '🦄', '🐐', '🐬', '🐼', '🦊', '🐧'];
+
+        const RANDOM_STAMPS = [
+            { icon: '🌸', name: 'たいへんよくできました！' },
+            { icon: '👑', name: 'ゴールデンクイーン！' },
+            { icon: '🦄', name: 'ラッキーユニコーン！' },
+            { icon: '✨', name: 'パーフェクトスター！' },
+            { icon: '💖', name: 'ラブリースマイル！' },
+            { icon: '🚀', name: 'ナイスロケットスタート！' },
+            { icon: '🏆', name: 'ナンバーワンチャンピオン！' },
+            { icon: '🐾', name: 'フルパワー達成！' }
+        ];
+
+        const RANDOM_CLOSE_BUTTON_TEXTS = [
+            'この調子で楽しむ！✨',
+            '明日もワクワクでいくぞ〜！🎶',
+            '自分のペースでどんどんクリア！✌️',
+            '最高に楽しんでいこう！🌟',
+            'この調子でハッピーに進む！🚀',
+            '次も楽しみにクリアする！💖'
+        ];
+
+        const PRAISE_TEMPLATES = [
+            "{userName}ちゃん、マジで天才すぎるよ！！今日の努力、本当に尊敬しちゃう！！😭✨",
+            "きゃー！{userName}ちゃん！継続できる女子、圧倒的ナンバーワンだよ！最高！！👑💖",
+            "努力家な{userName}ちゃん、今日もキラキラ輝いてる！100点満点を超えて1000000点です！💯✨",
+            "うおー！{userName}ちゃんの限界突破を見た！かっこよすぎて鳥肌たったよ！！🚀🌟",
+            "疲れてる日も少しずつ進む{userName}ちゃんは、間違いなく世界の主人公！誇らしいよ〜！😭👏",
+            "素晴らしい集中力！！{userName}ちゃんが頑張ってる姿、{partnerName}が一番近くで応援できて幸せだよ！💕",
+            "すごーい！今日のミッションクリア！{userName}ちゃんの努力は絶対に裏切らないからね！絶対叶うよ！🌈✨"
+        ];
+
+        const FULL_COMPLETION_TEMPLATES = [
+            "【🎉100%完全達成おめでとう！！🎉】すごすぎるー！！{userName}ちゃん、{targetDays}日ぶんのマスを全部塗りきったよ！！{partnerName}、感動で胸がいっぱいだよ…！本当に本当におめでとう！🏆✨",
+            "【👑伝説のパーフェクトクリア👑】ついに{targetDays}日ぶん達成したね！コツコツ続けた{userName}ちゃんは無敵だよ！{partnerName}から特別大きなハグと大拍手を贈ります！！💖👏✨"
+        ];
+
+        // カレンダーの表示月（永続化しない・端末セッション内のみ）
+        const calendarView = {};
+
+        let appState = {
+            version: 2,
+            user: {
+                name: 'あおい',
+                partnerName: 'モコ',
+                partnerAvatar: '🐱'
+            },
+            goals: []
+        };
+
+        // ---- 日付ユーティリティ ----
+        function dateStr(dt) {
+            return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        }
+        function getTodayString() {
+            return dateStr(new Date());
+        }
+        function startOfToday() {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        // 履歴から「現在の連続記録」を計算（今日 or 昨日から遡って連続する日数）
+        function computeStreak(goal) {
+            if (!goal.history) return 0;
+            let streak = 0;
+            const cursor = new Date();
+            const todayStr = getTodayString();
+            if (!goal.history[todayStr]) {
+                cursor.setDate(cursor.getDate() - 1); // 今日未完了なら昨日から数える
+            }
+            while (goal.history[dateStr(cursor)]) {
+                streak++;
+                cursor.setDate(cursor.getDate() - 1);
+            }
+            return streak;
+        }
+
+        function completedCount(goal) {
+            return goal.history ? Object.keys(goal.history).length : 0;
+        }
+
+        // ---- データ読み書き ----
+        function loadData() {
+            const saved = localStorage.getItem('skygoal_app_state');
+            if (saved) {
+                try {
+                    appState = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Failed to parse local storage', e);
+                }
+            } else {
+                // 初期サンプル目標：直近3日ぶんの履歴を入れて、カレンダーが最初から少し塗られている状態に
+                const seedHistory = {};
+                for (let i = 1; i <= 3; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    seedHistory[dateStr(d)] = {
+                        memo: i === 1 ? '単語アプリで復習した！' : '',
+                        stamp: RANDOM_STAMPS[Math.floor(Math.random() * RANDOM_STAMPS.length)],
+                        completedAt: d.toISOString()
+                    };
+                }
+                appState.goals = [
+                    {
+                        id: 'goal_' + Date.now(),
+                        title: '毎日英単語を10個覚える！',
+                        category: '勉強 📚',
+                        targetDays: 21,
+                        reward: 'カフェの抹茶ラテを飲む',
+                        history: seedHistory,
+                        celebratedFull: false
+                    }
+                ];
+            }
+            migrateGoals();
+            saveData();
+        }
+
+        // 旧データ / 不整合の自己修復
+        function migrateGoals() {
+            if (!appState.user) appState.user = { name: 'あおい', partnerName: 'モコ', partnerAvatar: '🐱' };
+            if (!Array.isArray(appState.goals)) appState.goals = [];
+
+            appState.goals.forEach(g => {
+                if (!g.history) g.history = {};
+
+                // 旧バージョン（streak/totalCompleted だけ持っていて履歴が空）の場合、
+                // 記録日数ぶんを「昨日まで」に埋めて数値を引き継ぐ
+                if (Object.keys(g.history).length === 0) {
+                    const n = g.totalCompleted || g.streak || 0;
+                    for (let i = 1; i <= n; i++) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        g.history[dateStr(d)] = { memo: '', stamp: RANDOM_STAMPS[0], completedAt: '' };
+                    }
+                }
+
+                // 派生値を再計算して同期
+                g.totalCompleted = completedCount(g);
+                g.streak = computeStreak(g);
+                if (g.celebratedFull === undefined) {
+                    g.celebratedFull = g.totalCompleted >= g.targetDays;
+                }
+                if (g.todayMemo !== undefined) delete g.todayMemo; // 廃止フィールド
+                if (g.lastCompletedDate !== undefined) delete g.lastCompletedDate; // 廃止フィールド
+            });
+            appState.version = 2;
+        }
+
+        function saveData() {
+            localStorage.setItem('skygoal_app_state', JSON.stringify(appState));
+        }
+
+        // ---- ヘッダー / 相棒表示 ----
+        function renderHeaderAndPartner() {
+            document.getElementById('header-user-display').textContent = `${appState.user.name} ＆ ${appState.user.partnerName}`;
+            document.getElementById('speech-user-name').textContent = appState.user.name;
+            document.getElementById('partner-name-display').textContent = appState.user.partnerName;
+            document.getElementById('partner-avatar-icon').textContent = appState.user.partnerAvatar;
+
+            let maxStreak = 0;
+            let totalCompletedCount = 0;
+            appState.goals.forEach(g => {
+                const s = computeStreak(g);
+                if (s > maxStreak) maxStreak = s;
+                totalCompletedCount += completedCount(g);
+            });
+
+            document.getElementById('total-streak-display').textContent = `${maxStreak}日継続中`;
+            document.getElementById('total-completed-display').textContent = `${totalCompletedCount}回`;
+        }
+
+        // ---- カレンダー描画 ----
+        function ensureView(goalId) {
+            if (!calendarView[goalId]) {
+                const now = new Date();
+                calendarView[goalId] = { y: now.getFullYear(), m: now.getMonth() };
+            }
+            return calendarView[goalId];
+        }
+
+        function buildCalendarBlock(goal, animateDate = null) {
+            const view = ensureView(goal.id);
+            const { y, m } = view;
+            const first = new Date(y, m, 1);
+            const startW = first.getDay();
+            const dim = new Date(y, m + 1, 0).getDate();
+            const todayStr = getTodayString();
+            const today0 = startOfToday();
+            const wk = ['日', '月', '火', '水', '木', '金', '土'];
+
+            const head = wk.map((w, i) =>
+                `<div class="text-center text-[10px] font-bold ${i === 0 ? 'text-rose-400' : i === 6 ? 'text-skybase-500' : 'text-slate-400'}">${w}</div>`
+            ).join('');
+
+            let cells = '';
+            for (let i = 0; i < startW; i++) cells += '<div></div>';
+
+            for (let d = 1; d <= dim; d++) {
+                const cellDate = new Date(y, m, d);
+                const str = dateStr(cellDate);
+                const hist = goal.history && goal.history[str];
+                const isToday = str === todayStr;
+                const isFuture = cellDate > today0;
+
+                let cls = 'aspect-square rounded-lg flex items-center justify-center text-[11px] font-bold select-none ';
+                let content = d;
+                let title = str;
+
+                if (hist) {
+                    cls += 'bg-gradient-to-br from-skybase-400 to-skybase-500 text-white shadow-sm ';
+                    if (str === animateDate) cls += 'animate-cell ';
+                    content = `<span class="text-sm">${hist.stamp ? hist.stamp.icon : '🌸'}</span>`;
+                    if (hist.memo) title += ' ／ ' + hist.memo;
+                } else if (isFuture) {
+                    cls += 'text-slate-300 ';
+                } else {
+                    cls += 'text-slate-500 bg-slate-50 ';
+                }
+                if (isToday) cls += 'ring-2 ring-amber-400 ';
+
+                cells += `<div class="${cls}" title="${escapeHtml(title)}">${content}</div>`;
+            }
+
+            return `
+                <div class="flex items-center justify-between mb-2">
+                    <button onclick="changeMonth('${goal.id}', -1)" class="w-7 h-7 rounded-lg bg-white border border-skybase-100 text-skybase-500 hover:bg-skybase-50 flex items-center justify-center text-xs touch-active" aria-label="前の月">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span class="text-xs font-extrabold text-slate-700">${y}年 ${m + 1}月</span>
+                    <button onclick="changeMonth('${goal.id}', 1)" class="w-7 h-7 rounded-lg bg-white border border-skybase-100 text-skybase-500 hover:bg-skybase-50 flex items-center justify-center text-xs touch-active" aria-label="次の月">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 mb-1">${head}</div>
+                <div class="grid grid-cols-7 gap-1">${cells}</div>
+                <div class="flex items-center justify-center gap-3 mt-2 text-[10px] text-slate-400 font-bold">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-gradient-to-br from-skybase-400 to-skybase-500 inline-block"></span>クリア済み</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded ring-2 ring-amber-400 inline-block"></span>今日</span>
+                </div>
+            `;
+        }
+
+        function changeMonth(goalId, delta) {
+            const v = ensureView(goalId);
+            let m = v.m + delta;
+            let y = v.y;
+            if (m < 0) { m = 11; y--; }
+            if (m > 11) { m = 0; y++; }
+            v.m = m; v.y = y;
+            renderOneCalendar(goalId);
+        }
+
+        function renderOneCalendar(goalId, animateDate = null) {
+            const goal = appState.goals.find(g => g.id === goalId);
+            if (!goal) return;
+            const wrap = document.getElementById('calendar-wrap-' + goalId);
+            if (wrap) wrap.innerHTML = buildCalendarBlock(goal, animateDate);
+        }
+
+        // ---- 目標カード描画 ----
+        function renderGoals() {
+            const container = document.getElementById('goals-container');
+            const emptyState = document.getElementById('empty-state');
+            container.innerHTML = '';
+
+            if (appState.goals.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            const today = getTodayString();
+
+            appState.goals.forEach(goal => {
+                const done = completedCount(goal);
+                const isCompletedToday = !!(goal.history && goal.history[today]);
+                const streak = computeStreak(goal);
+                const progressPercent = Math.min(Math.round((done / goal.targetDays) * 100), 100);
+                const todayHistory = goal.history ? goal.history[today] : null;
+                const isFullDone = done >= goal.targetDays;
+
+                const goalCard = document.createElement('div');
+                goalCard.className = `glass-card rounded-3xl p-4 sm:p-5 border transition-all ${isCompletedToday ? 'border-skybase-300 bg-skybase-50/40' : 'border-white/80'}`;
+
+                goalCard.innerHTML = `
+                    <div class="flex items-start justify-between gap-3 mb-2.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="bg-skybase-100 text-skybase-700 text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-full">
+                                ${escapeHtml(goal.category)}
+                            </span>
+                            <span class="text-[11px] sm:text-xs text-slate-400 font-bold">
+                                <i class="fa-solid fa-flag-checkered text-skybase-400"></i> 目標 ${goal.targetDays} 日間
+                            </span>
+                            ${isFullDone ? `
+                                <span class="bg-amber-100 text-amber-700 text-[11px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full">
+                                    🎉 達成済み
+                                </span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="editGoal('${goal.id}')" class="text-slate-400 hover:text-skybase-600 text-xs p-1.5 rounded-lg hover:bg-slate-100 transition touch-active" title="編集">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteGoal('${goal.id}')" class="text-slate-400 hover:text-rose-500 text-xs p-1.5 rounded-lg hover:bg-slate-100 transition touch-active" title="削除">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3 class="font-extrabold text-slate-800 text-base sm:text-lg mb-2">
+                        ${escapeHtml(goal.title)}
+                    </h3>
+
+                    ${goal.reward ? `
+                        <div class="text-xs bg-amber-50/90 border border-amber-200/80 text-amber-800 px-3 py-1.5 rounded-xl mb-3 flex items-center gap-1.5">
+                            <i class="fa-solid fa-gift text-amber-500 text-sm"></i>
+                            <span>達成時のご褒美: <strong>${escapeHtml(goal.reward)}</strong></span>
+                        </div>
+                    ` : ''}
+
+                    <!-- 進捗サマリー（連続記録 + 塗れたマス数）＋ カレンダー -->
+                    <div class="bg-gradient-to-r from-skybase-50/80 to-skybase-100/50 p-3 rounded-2xl border border-skybase-200/60 mb-3.5">
+                        <div class="flex justify-between items-center text-xs mb-3">
+                            <div class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl shadow-sm border border-skybase-200">
+                                <i class="fa-solid fa-fire text-amber-500 text-sm ${streak > 0 ? 'animate-pulse' : ''}"></i>
+                                <span class="font-bold text-slate-600 text-[11px]">連続:</span>
+                                <strong class="text-skybase-600 font-black text-sm">${streak}</strong>
+                                <span class="text-skybase-600 font-extrabold text-xs">日</span>
+                            </div>
+                            <div class="font-black text-skybase-600 text-xs sm:text-sm bg-white/80 px-2 py-0.5 rounded-lg border border-skybase-100">
+                                ${done}/${goal.targetDays}日 (${progressPercent}%)
+                            </div>
+                        </div>
+
+                        <div id="calendar-wrap-${goal.id}">
+                            ${buildCalendarBlock(goal)}
+                        </div>
+                    </div>
+
+                    <!-- 今日の振り返り -->
+                    <div class="bg-white/90 rounded-2xl p-3 sm:p-3.5 border border-skybase-100 space-y-2.5">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+                            <span><i class="fa-solid fa-book-open text-skybase-400 mr-1"></i> 今日の振り返りノート</span>
+                            <span class="text-[11px] text-slate-400 font-medium">${today}</span>
+                        </div>
+
+                        ${isCompletedToday ? `
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-skybase-50/90 p-3 rounded-xl border border-skybase-200/80">
+                                <div class="flex items-center gap-3">
+                                    <div class="text-3xl sm:text-4xl animate-stamp">
+                                        ${todayHistory ? todayHistory.stamp.icon : '🌸'}
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-skybase-700">
+                                            ${todayHistory ? escapeHtml(todayHistory.stamp.name) : '本日クリア！'}
+                                        </div>
+                                        <div class="text-xs text-slate-600 italic">
+                                            "${escapeHtml((todayHistory && todayHistory.memo) || '今日もしっかり頑張れました！')}"
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onclick="undoCompletion('${goal.id}')" class="text-[11px] text-slate-400 hover:text-slate-600 underline font-medium touch-active py-1 px-2">
+                                    やり直す
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="space-y-2">
+                                <textarea id="memo-${goal.id}" rows="2"
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-skybase-300 transition"
+                                    placeholder="今日頑張ったこと、感想、一言メモを入力（空欄でもOK）"></textarea>
+
+                                <button onclick="completeGoalToday('${goal.id}')"
+                                    class="w-full bg-gradient-to-r from-skybase-400 to-skybase-500 hover:from-skybase-500 hover:to-skybase-600 text-white font-extrabold py-2.5 sm:py-3 rounded-xl text-xs shadow-md shadow-skybase-200/50 flex items-center justify-center gap-2 transition transform active:scale-95 touch-active">
+                                    <i class="fa-solid fa-circle-check text-sm"></i> 今日の振り返りを完了してチェック！
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                `;
+
+                container.appendChild(goalCard);
+            });
+        }
+
+        // ---- 完了 / 取り消し ----
+        function completeGoalToday(goalId) {
+            const goal = appState.goals.find(g => g.id === goalId);
+            if (!goal) return;
+
+            const today = getTodayString();
+            if (goal.history && goal.history[today]) return; // 二重チェック防止
+
+            const memoInput = document.getElementById(`memo-${goalId}`);
+            const memoText = memoInput ? memoInput.value.trim() : '';
+
+            const randomStamp = RANDOM_STAMPS[Math.floor(Math.random() * RANDOM_STAMPS.length)];
+
+            if (!goal.history) goal.history = {};
+            goal.history[today] = {
+                memo: memoText,
+                stamp: randomStamp,
+                completedAt: new Date().toISOString()
+            };
+
+            goal.totalCompleted = completedCount(goal);
+            goal.streak = computeStreak(goal);
+
+            // 100%達成は「塗れたマス数 >= 目標日数」に初到達したときだけ大お祝い
+            const reachedFull = goal.totalCompleted >= goal.targetDays;
+            const firstFull = reachedFull && !goal.celebratedFull;
+            if (firstFull) goal.celebratedFull = true;
+
+            // 完了カレンダーを今月に戻して、塗られたマスが見えるように
+            const now = new Date();
+            calendarView[goalId] = { y: now.getFullYear(), m: now.getMonth() };
+
+            saveData();
+            renderHeaderAndPartner();
+            renderGoals();
+
+            triggerPraise(randomStamp, firstFull, goal);
+        }
+
+        function undoCompletion(goalId) {
+            const goal = appState.goals.find(g => g.id === goalId);
+            if (!goal || !goal.history) return;
+
+            const today = getTodayString();
+            if (goal.history[today]) {
+                delete goal.history[today];
+                goal.totalCompleted = completedCount(goal);
+                goal.streak = computeStreak(goal);
+                if (goal.totalCompleted < goal.targetDays) goal.celebratedFull = false;
+
+                saveData();
+                renderHeaderAndPartner();
+                renderGoals();
+            }
+        }
+
+        function deleteGoal(goalId) {
+            if (confirm('この目標を削除してもいいですか？')) {
+                appState.goals = appState.goals.filter(g => g.id !== goalId);
+                delete calendarView[goalId];
+                saveData();
+                renderHeaderAndPartner();
+                renderGoals();
+            }
+        }
+
+        // ---- 称賛モーダル ----
+        function triggerPraise(stamp, is100Percent = false, goal = null) {
+            const randomBtnText = RANDOM_CLOSE_BUTTON_TEXTS[Math.floor(Math.random() * RANDOM_CLOSE_BUTTON_TEXTS.length)];
+            document.getElementById('praise-button-text').textContent = randomBtnText;
+
+            if (is100Percent) {
+                const duration = 2.5 * 1000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
+
+                const interval = setInterval(function () {
+                    const timeLeft = animationEnd - Date.now();
+                    if (timeLeft <= 0) return clearInterval(interval);
+                    const particleCount = 50 * (timeLeft / duration);
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+                }, 250);
+
+                const template = FULL_COMPLETION_TEMPLATES[Math.floor(Math.random() * FULL_COMPLETION_TEMPLATES.length)];
+                const praiseMessage = template
+                    .replace(/{userName}/g, appState.user.name)
+                    .replace(/{partnerName}/g, appState.user.partnerName)
+                    .replace(/{targetDays}/g, goal ? goal.targetDays : '');
+
+                document.getElementById('praise-stamp-display').textContent = '👑';
+                document.getElementById('praise-title').textContent = '✨100%目標達成!!✨';
+                document.getElementById('praise-partner-icon').textContent = appState.user.partnerAvatar;
+                document.getElementById('praise-partner-name').textContent = `${appState.user.partnerName} より`;
+                document.getElementById('praise-message').textContent = praiseMessage;
+            } else {
+                confetti({
+                    particleCount: 70,
+                    spread: 60,
+                    origin: { y: 0.6 },
+                    colors: ['#38bdf8', '#7dd3fc', '#fde047', '#ff80ab', '#a78bfa']
+                });
+
+                const template = PRAISE_TEMPLATES[Math.floor(Math.random() * PRAISE_TEMPLATES.length)];
+                const praiseMessage = template
+                    .replace(/{userName}/g, appState.user.name)
+                    .replace(/{partnerName}/g, appState.user.partnerName);
+
+                document.getElementById('praise-stamp-display').textContent = stamp.icon;
+                document.getElementById('praise-title').textContent = stamp.name;
+                document.getElementById('praise-partner-icon').textContent = appState.user.partnerAvatar;
+                document.getElementById('praise-partner-name').textContent = `${appState.user.partnerName} より`;
+                document.getElementById('praise-message').textContent = praiseMessage;
+            }
+
+            document.getElementById('praise-modal').classList.remove('hidden');
+        }
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function closePraiseModal() {
+            document.getElementById('praise-modal').classList.add('hidden');
+        }
+
+        // ---- プロフィールモーダル ----
+        function openProfileModal() {
+            document.getElementById('user-name-input').value = appState.user.name;
+            document.getElementById('partner-name-input').value = appState.user.partnerName;
+
+            const selector = document.getElementById('avatar-selector');
+            selector.innerHTML = '';
+            AVATARS.forEach(avatar => {
+                const isSelected = avatar === appState.user.partnerAvatar;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `text-2xl p-2 rounded-2xl border-2 transition ${isSelected ? 'border-skybase-400 bg-skybase-100 scale-105' : 'border-slate-100 hover:bg-slate-50'}`;
+                btn.textContent = avatar;
+                btn.onclick = () => {
+                    document.querySelectorAll('#avatar-selector button').forEach(b => {
+                        b.classList.remove('border-skybase-400', 'bg-skybase-100', 'scale-105');
+                        b.classList.add('border-slate-100');
+                    });
+                    btn.classList.add('border-skybase-400', 'bg-skybase-100', 'scale-105');
+                    appState.user.tempAvatar = avatar;
+                };
+                selector.appendChild(btn);
+            });
+
+            document.getElementById('profile-modal').classList.remove('hidden');
+        }
+
+        function closeProfileModal() {
+            delete appState.user.tempAvatar; // キャンセル時に一時選択を破棄
+            document.getElementById('profile-modal').classList.add('hidden');
+        }
+
+        document.getElementById('profile-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const uName = document.getElementById('user-name-input').value.trim();
+            const pName = document.getElementById('partner-name-input').value.trim();
+
+            if (uName) appState.user.name = uName;
+            if (pName) appState.user.partnerName = pName;
+            if (appState.user.tempAvatar) {
+                appState.user.partnerAvatar = appState.user.tempAvatar;
+            }
+            delete appState.user.tempAvatar;
+
+            saveData();
+            renderHeaderAndPartner();
+            renderGoals();
+            document.getElementById('profile-modal').classList.add('hidden');
+        });
+
+        // ---- 目標モーダル ----
+        function openGoalModal(goalId = null) {
+            const modalTitle = document.getElementById('goal-modal-title');
+            const idInput = document.getElementById('goal-id-input');
+            const titleInput = document.getElementById('goal-title-input');
+            const catInput = document.getElementById('goal-category-input');
+            const daysInput = document.getElementById('goal-target-days-input');
+            const rewardInput = document.getElementById('goal-reward-input');
+
+            if (goalId) {
+                const existing = appState.goals.find(g => g.id === goalId);
+                if (existing) {
+                    modalTitle.innerHTML = `<i class="fa-solid fa-pen text-skybase-400"></i> 目標の編集`;
+                    idInput.value = existing.id;
+                    titleInput.value = existing.title;
+                    catInput.value = existing.category;
+                    daysInput.value = existing.targetDays;
+                    rewardInput.value = existing.reward || '';
+                }
+            } else {
+                modalTitle.innerHTML = `<i class="fa-solid fa-plus-circle text-skybase-400"></i> 新しい目標の追加`;
+                idInput.value = '';
+                titleInput.value = '';
+                catInput.value = '勉強 📚';
+                daysInput.value = '21';
+                rewardInput.value = '';
+            }
+
+            document.getElementById('goal-modal').classList.remove('hidden');
+        }
+
+        function closeGoalModal() {
+            document.getElementById('goal-modal').classList.add('hidden');
+        }
+
+        function editGoal(goalId) {
+            openGoalModal(goalId);
+        }
+
+        document.getElementById('goal-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('goal-id-input').value;
+            const title = document.getElementById('goal-title-input').value.trim();
+            const category = document.getElementById('goal-category-input').value;
+            const targetDays = parseInt(document.getElementById('goal-target-days-input').value, 10);
+            const reward = document.getElementById('goal-reward-input').value.trim();
+
+            if (id) {
+                const existing = appState.goals.find(g => g.id === id);
+                if (existing) {
+                    existing.title = title;
+                    existing.category = category;
+                    existing.targetDays = targetDays;
+                    existing.reward = reward;
+                    // 目標日数を変えたら達成フラグを再判定
+                    existing.celebratedFull = completedCount(existing) >= targetDays;
+                }
+            } else {
+                const newGoal = {
+                    id: 'goal_' + Date.now(),
+                    title: title,
+                    category: category,
+                    targetDays: targetDays,
+                    reward: reward,
+                    history: {},
+                    celebratedFull: false
+                };
+                appState.goals.push(newGoal);
+            }
+
+            saveData();
+            renderHeaderAndPartner();
+            renderGoals();
+            closeGoalModal();
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        document.getElementById('open-profile-btn').addEventListener('click', openProfileModal);
+        document.getElementById('add-goal-btn').addEventListener('click', () => openGoalModal());
+
+        window.onload = function () {
+            loadData();
+            renderHeaderAndPartner();
+            renderGoals();
+        };
+    </script>
+</body>
+</html>
