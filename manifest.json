@@ -1,0 +1,17 @@
+{
+  "name": "SkyGoal - 相棒と叶える目標ノート",
+  "short_name": "SkyGoal",
+  "description": "相棒と一緒に、毎日の目標をカレンダーで塗って達成していく習慣ノート。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e0f2fe",
+  "theme_color": "#0284c7",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
